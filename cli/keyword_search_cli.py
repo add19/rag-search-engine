@@ -2,26 +2,10 @@
 
 import argparse
 import json
-import string
 from nltk.stem import PorterStemmer
-
-def preprocess_text(text):
-    text = text.lower()
-    # translate_table = str.maketrans("", "", ",!")
-    # text = text.translate(translate_table)
-    text = text.translate(str.maketrans("", "", string.punctuation))
-    return text
-
-def tokenize_input(text, stop_words, stemmer):
-    text_tokens = text.split()
-    text_tokens = [stemmer.stem(t) for t in text_tokens if t and t not in stop_words]
-    return text_tokens
-
-def load_stop_words():
-    with open('data/stopwords.txt', 'r') as f:
-        data = f.read()
-        stop_words = data.splitlines()
-    return stop_words
+from utils import preprocess_text
+from utils import tokenize_input
+from utils import load_stop_words
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Keyword Search CLI")
