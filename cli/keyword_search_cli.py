@@ -2,14 +2,27 @@
 
 import argparse
 import json
+import sys
+from pathlib import Path
+
+CLI_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = CLI_DIR.parent
+
+for path in (CLI_DIR, PROJECT_ROOT):
+    path_str = str(path)
+    if path_str not in sys.path:
+        sys.path.insert(0, path_str)
+
 from nltk.stem import PorterStemmer
 from utils import preprocess_text
 from utils import tokenize_input
 from utils import load_stop_words
+from Index.InvertedIndex import InvertedIndex
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Keyword Search CLI")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
+    subparsers.add_parser("build", help="Build inverted index")
 
     search_parser = subparsers.add_parser("search", help="Search movies using BM25")
     search_parser.add_argument("query", type=str, help="Search query")
@@ -44,6 +57,13 @@ def main() -> None:
             for i in range(0, len(results), 1):
                 print(f"{i + 1}. {results[i]}")
 
+            pass
+        case "build":
+            index = InvertedIndex()
+            index.build()
+            index.save()
+            docs = index.get_documents("merida")
+            print(f"First document for token 'merida' = {docs[0]}")
             pass
         case _:
             parser.print_help()
