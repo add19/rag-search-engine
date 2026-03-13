@@ -32,6 +32,9 @@ class InvertedIndex:
     
     def get_documents(self, term):
         # get the set of document ids for the given token and return them as a sorted list
+        if term.lower() not in self.index:
+            return []
+        
         doc_id_set = self.index[term.lower()]
         ret_list = []
         for doc_id in doc_id_set:
@@ -56,6 +59,21 @@ class InvertedIndex:
         path.mkdir(exist_ok=True)
 
         pickle.dump(self.index, open('cache/index.pkl', 'wb'))
-        pickle.dump(self.index, open('cache/docmap.pkl', 'wb'))
+        pickle.dump(self.docmap, open('cache/docmap.pkl', 'wb'))
 
         return
+    
+    def load(self):
+        index_path = Path("cache/index.pkl")
+        docmap_path = Path("cache/docmap.pkl")
+
+        if not index_path.exists():
+            raise FileNotFoundError(f"Path does not exist: {index_path}")
+        if not docmap_path.exists():
+            raise FileNotFoundError(f"Path does not exist: {docmap_path}")
+        
+        with open('cache/index.pkl', 'rb') as f:
+            self.index = pickle.load(f)
+
+        with open('cache/docmap.pkl', 'rb') as f:
+            self.docmap = pickle.load(f)

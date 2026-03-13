@@ -1,3 +1,4 @@
+import json
 import string
 
 def preprocess_text(text):
@@ -17,3 +18,9 @@ def load_stop_words():
         data = f.read()
         stop_words = data.splitlines()
     return stop_words
+
+def load_movies():
+    with open('data/movies.json', 'r') as f:
+        movies_obj = json.load(f)
+    
+    return movies_obj
