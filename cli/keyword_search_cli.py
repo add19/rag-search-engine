@@ -1,73 +1,63 @@
 #!/usr/bin/env python3
 
 import argparse
-import json
-import sys
 from pathlib import Path
 
-CLI_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = CLI_DIR.parent
-
-for path in (CLI_DIR, PROJECT_ROOT):
-    path_str = str(path)
-    if path_str not in sys.path:
-        sys.path.insert(0, path_str)
-
-from nltk.stem import PorterStemmer
-from utils import load_movies, preprocess_text
-from utils import tokenize_input
-from utils import load_stop_words
-from Index.InvertedIndex import InvertedIndex
+from utils import calculate_tf
+from utils import calculate_idf
+from utils import search
+from utils import calculate_tf_idf
+from utils import InvertedIndex
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Keyword Search CLI")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
     subparsers.add_parser("build", help="Build inverted index")
 
+    tf_idf_parser = subparsers.add_parser("tfidf", help="Get tf-idf score of a given search query")
+    tf_idf_parser.add_argument("doc_id", type=int, help="document id")
+    tf_idf_parser.add_argument("query", type=str, help="search query")
+
+    idf_parser = subparsers.add_parser("idf", help="Get inverse document frequency of a given term")
+    idf_parser.add_argument("term", type=str, help="search term")
+    
+    tf_parser = subparsers.add_parser("tf", help="Get term frequency of a given term")
+    tf_parser.add_argument("doc_id", type=int, help="document id")
+    tf_parser.add_argument("term", type=str, help="Search term")
+
     search_parser = subparsers.add_parser("search", help="Search movies using BM25")
     search_parser.add_argument("query", type=str, help="Search query")
     
-    stemmer = PorterStemmer()
     
     args = parser.parse_args()
-    stop_words = load_stop_words()
 
     match args.command:
         case "search":
             # print the search query here
             print(f"Searching for: {args.query}")
             
-            results = []
-            try:
-                index = InvertedIndex()
-                index.load()
-            except Exception:
-                raise Exception("Cannot load index")
-                        
-            preprocessed_query = preprocess_text(args.query)
-            query_tokens = tokenize_input(preprocessed_query, stop_words, stemmer)
-
-            for token in query_tokens:
-                docs = index.get_documents(token)
-                for doc in docs:
-                    results.append(doc)
-                    if len(results) == 5:
-                        break
-                if len(results) == 5:
-                    break
+            results = search(args.query)
             
             for i in range(0, len(results), 1):
                 print(f"{index.docmap[results[i]]["id"]} {index.docmap[results[i]]["title"]}")
-
             pass
         case "build":
             index = InvertedIndex()
             index.build()
             index.save()
             pass
+        case "tf":
+            print(f"doc_id: {args.doc_id} tf: {calculate_tf(args.doc_id, args.term)}")
+            pass
+        case "idf":
+            inverse_doc_freq = calculate_idf(args.term)
+            print(f"Inverse document frequency of '{args.term}': {inverse_doc_freq:.2f}")
+            pass
+        case "tfidf":
+            tf_idf_score = calculate_tf_idf(args.doc_id, args.query)
+            print(f"TF-IDF score of '{args.query}' in document '{args.doc_id}': {tf_idf_score:.2f}")
         case _:
             parser.print_help()
-
 
 if __name__ == "__main__":
     main()
