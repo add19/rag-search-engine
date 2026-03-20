@@ -3,16 +3,33 @@
 import argparse
 from pathlib import Path
 
+from config import BM25_B, BM25_K1
 from utils import calculate_tf
 from utils import calculate_idf
 from utils import search
 from utils import calculate_tf_idf
+from utils import get_bm25_idf
+from utils import get_bm25_tf
 from utils import InvertedIndex
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Keyword Search CLI")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
     subparsers.add_parser("build", help="Build inverted index")
+
+    bm25search_parser = subparsers.add_parser("bm25search", help="Search movies using full BM25 scoring")
+    bm25search_parser.add_argument("query", type=str, help="Search query")
+    
+    bm25_tf_parser = subparsers.add_parser(
+    "bm25tf", help="Get BM25 TF score for a given document ID and term"
+    )
+    bm25_tf_parser.add_argument("doc_id", type=int, help="Document ID")
+    bm25_tf_parser.add_argument("term", type=str, help="Term to get BM25 TF score for")
+    bm25_tf_parser.add_argument("k1", type=float, nargs='?', default=BM25_K1, help="Tunable BM25 K1 parameter")
+    bm25_tf_parser.add_argument("b", type=float, nargs='?', default=BM25_B, help="Tunable BM25 b parameter")
+    
+    bm25_idf_parser = subparsers.add_parser("bm25idf", help="Get BM25 IDF score for a given term")
+    bm25_idf_parser.add_argument("term", type=str, help="Term to get BM25 IDF score for")
 
     tf_idf_parser = subparsers.add_parser("tfidf", help="Get tf-idf score of a given search query")
     tf_idf_parser.add_argument("doc_id", type=int, help="document id")
@@ -56,6 +73,20 @@ def main() -> None:
         case "tfidf":
             tf_idf_score = calculate_tf_idf(args.doc_id, args.query)
             print(f"TF-IDF score of '{args.query}' in document '{args.doc_id}': {tf_idf_score:.2f}")
+        case "bm25idf":
+            bm25idf = get_bm25_idf(args.term)
+            print(f"BM25 IDF score of '{args.term}': {bm25idf:.2f}")
+        case "bm25tf":
+            bm25tf = get_bm25_tf(args.doc_id, args.term, args.k1, args.b)
+            print(f"BM25 TF score of '{args.term}' in document '{args.doc_id}': {bm25tf:.2f}")
+        case "bm25search":
+            index = InvertedIndex()
+            index.load()
+            docs = index.bm25_search(args.query, 5)
+            idx = 1
+            for doc_id, score in docs.items():
+                print(f"{idx}. ({doc_id}) {index.docmap[doc_id]["title"]} - Score: {score:.2f}")
+                idx += 1
         case _:
             parser.print_help()
 
